@@ -92,15 +92,29 @@ class CallNotificationBuilder(
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setFullScreenIntent(createContentIntent(), true)
 
-                // Use call style notification for API 29+
+                // Use call style notification for API 29+ (when available)
                 if (deviceVersionSupportsCallStyle()) {
-                    notificationBuilder.setStyle(
-                        NotificationCompat.CallStyle.forIncomingCall(
-                            person,
-                            createDeclineIntent(),
-                            createAnswerIntent(config.isVideoCall)
-                        ).setIsVideo(config.isVideoCall)
-                    )
+                    try {
+                        // Try to use CallStyle if available in the support library
+                        val callStyleClass = Class.forName("androidx.core.app.NotificationCompat\$CallStyle")
+                        val forIncomingCallMethod = callStyleClass.getMethod("forIncomingCall", 
+                            androidx.core.app.Person::class.java, 
+                            android.app.PendingIntent::class.java, 
+                            android.app.PendingIntent::class.java)
+                        val callStyle = forIncomingCallMethod.invoke(null, person, createDeclineIntent(), createAnswerIntent(config.isVideoCall))
+                        val setIsVideoMethod = callStyle.javaClass.getMethod("setIsVideo", Boolean::class.java)
+                        val finalCallStyle = setIsVideoMethod.invoke(callStyle, config.isVideoCall)
+                        val setStyleMethod = notificationBuilder.javaClass.getMethod("setStyle", androidx.core.app.NotificationCompat.Style::class.java)
+                        setStyleMethod.invoke(notificationBuilder, finalCallStyle)
+                    } catch (e: Exception) {
+                        // Fallback if CallStyle is not available
+                        notificationBuilder
+                            .addAction(createNotificationAction("Decline", CallAction.DECLINE))
+                            .addAction(createNotificationAction(
+                                if (config.isVideoCall) "Answer Video" else "Answer",
+                                if (config.isVideoCall) CallAction.ANSWER_VIDEO else CallAction.ANSWER_AUDIO
+                            ))
+                    }
                 } else {
                     // Fallback actions for older Android versions
                     notificationBuilder
@@ -133,12 +147,21 @@ class CallNotificationBuilder(
                     .setCategory(NotificationCompat.CATEGORY_CALL)
 
                 if (deviceVersionSupportsCallStyle()) {
-                    notificationBuilder.setStyle(
-                        NotificationCompat.CallStyle.forOngoingCall(
-                            person,
-                            createHangupIntent()
-                        ).setIsVideo(config.isVideoCall)
-                    )
+                    try {
+                        // Try to use CallStyle if available in the support library
+                        val callStyleClass = Class.forName("androidx.core.app.NotificationCompat\$CallStyle")
+                        val forOngoingCallMethod = callStyleClass.getMethod("forOngoingCall", 
+                            androidx.core.app.Person::class.java, 
+                            android.app.PendingIntent::class.java)
+                        val callStyle = forOngoingCallMethod.invoke(null, person, createHangupIntent())
+                        val setIsVideoMethod = callStyle.javaClass.getMethod("setIsVideo", Boolean::class.java)
+                        val finalCallStyle = setIsVideoMethod.invoke(callStyle, config.isVideoCall)
+                        val setStyleMethod = notificationBuilder.javaClass.getMethod("setStyle", androidx.core.app.NotificationCompat.Style::class.java)
+                        setStyleMethod.invoke(notificationBuilder, finalCallStyle)
+                    } catch (e: Exception) {
+                        // Fallback if CallStyle is not available
+                        notificationBuilder.addAction(createNotificationAction("Hang Up", CallAction.HANGUP))
+                    }
                 } else {
                     notificationBuilder.addAction(createNotificationAction("Hang Up", CallAction.HANGUP))
                 }
