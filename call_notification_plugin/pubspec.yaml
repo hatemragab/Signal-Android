@@ -1,6 +1,6 @@
 name: call_notification_plugin
 description: A Flutter plugin for VoIP call-style notifications inspired by Signal Android
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/yourorg/call_notification_plugin
 
 environment:

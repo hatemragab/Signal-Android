@@ -182,9 +182,22 @@ class CallNotificationManager(
         // Stop ringing for any action
         stopRingerAndVibration()
         
-        // For decline or hangup, dismiss the notification
-        if (action == CallAction.DECLINE || action == CallAction.HANGUP) {
-            dismissCallNotification()
+        when (action) {
+            CallAction.DECLINE -> {
+                // Decline incoming call - dismiss notification
+                dismissCallNotification()
+            }
+            CallAction.HANGUP -> {
+                // End ongoing call - dismiss notification
+                dismissCallNotification()
+            }
+            CallAction.ANSWER,
+            CallAction.ANSWER_AUDIO,
+            CallAction.ANSWER_VIDEO -> {
+                // Answer call - keep notification but transition to connected state
+                // The notification will be updated by Flutter to show ongoing call
+                // Don't dismiss here, let Flutter control the transition
+            }
         }
         
         // Notify Flutter about the action

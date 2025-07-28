@@ -30,6 +30,7 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
   bool _isInitialized = false;
   bool _notificationsEnabled = false;
   bool _hasActiveCall = false;
+  String _callState = 'None'; // Track call state for better UI feedback
 
   @override
   void initState() {
@@ -67,19 +68,24 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
       case CallAction.answer:
       case CallAction.answerAudio:
       case CallAction.answerVideo:
-        _showSnackBar('Call answered!', Colors.green);
+        _showSnackBar('Call answered! Transitioning to connected...', Colors.green);
+        setState(() {
+          _callState = 'Connecting...';
+        });
         _simulateCallConnected();
         break;
       case CallAction.decline:
         _showSnackBar('Call declined!', Colors.red);
         setState(() {
           _hasActiveCall = false;
+          _callState = 'None';
         });
         break;
       case CallAction.hangup:
         _showSnackBar('Call ended!', Colors.orange);
         setState(() {
           _hasActiveCall = false;
+          _callState = 'None';
         });
         break;
     }
@@ -106,6 +112,7 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
     if (success) {
       setState(() {
         _hasActiveCall = true;
+        _callState = 'Incoming';
       });
       _showSnackBar('Incoming voice call simulated!', Colors.blue);
     } else {
@@ -124,6 +131,7 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
     if (success) {
       setState(() {
         _hasActiveCall = true;
+        _callState = 'Incoming';
       });
       _showSnackBar('Incoming video call simulated!', Colors.blue);
     } else {
@@ -141,8 +149,9 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
     if (success) {
       setState(() {
         _hasActiveCall = true;
+        _callState = 'Connected'; // This is the ongoing call state
       });
-      _showSnackBar('Call connected!', Colors.green);
+      _showSnackBar('Call connected! Notification will remain visible.', Colors.green);
     }
   }
 
@@ -160,6 +169,7 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
     if (success) {
       setState(() {
         _hasActiveCall = true;
+        _callState = 'Outgoing';
       });
       _showSnackBar('Outgoing call simulated!', Colors.orange);
       
@@ -178,6 +188,7 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
     if (success) {
       setState(() {
         _hasActiveCall = false;
+        _callState = 'None';
       });
       _showSnackBar('Call ended!', Colors.grey);
     }
@@ -258,6 +269,21 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text('Call State:'),
+                        Text(
+                          _callState,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _callState == 'Connected' ? Colors.green : 
+                                   _callState == 'Incoming' ? Colors.blue :
+                                   _callState == 'Outgoing' ? Colors.orange : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
                         Text('Last Action:'),
                         Text(
                           _lastAction,
@@ -319,11 +345,37 @@ class _CallNotificationDemoState extends State<CallNotificationDemo> {
             
             // Call Control Button
             if (_hasActiveCall)
-              ElevatedButton.icon(
-                onPressed: _endCall,
-                icon: Icon(Icons.call_end),
-                label: Text('End Call'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              Column(
+                children: [
+                  if (_callState == 'Connected')
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      margin: EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        border: Border.all(color: Colors.green),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.green),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Connected call notification persists until you hang up!',
+                              style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ElevatedButton.icon(
+                    onPressed: _endCall,
+                    icon: Icon(Icons.call_end),
+                    label: Text('End Call'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  ),
+                ],
               ),
             
             Spacer(),

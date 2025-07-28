@@ -6,6 +6,7 @@ A Flutter plugin for creating VoIP call-style notifications on Android, inspired
 
 ✅ **Call-Style Notifications** - Native Android call UI (API 29+) with fallback for older versions  
 ✅ **Multiple Call States** - Incoming, outgoing, connected, and connecting notifications  
+✅ **Persistent Connected Calls** - Connected call notifications remain visible until manually ended  
 ✅ **Audio & Vibration** - Custom ringtones and vibration patterns  
 ✅ **Action Buttons** - Answer, decline, hangup with proper callbacks  
 ✅ **Permission Handling** - Notification permissions and settings management  
@@ -132,15 +133,40 @@ final outgoingConfig = CallNotificationConfig(
 );
 await CallNotificationPlugin.showCallNotification(outgoingConfig);
 
-// Update to connected state
+// Update to connected state - notification becomes persistent
 await CallNotificationPlugin.simulateCallConnected(
   callerId: "user123",
   callerName: "John Doe",
   isVideoCall: false,
 );
 
-// Dismiss notification
+// Dismiss notification (only for ending calls)
 await CallNotificationPlugin.dismissCallNotification();
+```
+
+### Persistent Connected Call Behavior
+
+**Important:** When a call transitions to the `established` (connected) state, the notification becomes persistent and will remain visible until:
+
+1. **User hangs up** via the notification action button
+2. **App explicitly dismisses** the notification via `dismissCallNotification()`
+3. **User swipes away** the notification (if allowed by system)
+
+This behavior ensures users always know when they have an active call, following modern VoIP app patterns.
+
+```dart
+// When user answers a call, transition to connected state
+CallNotificationPlugin.onCallAction.listen((action) {
+  if (action == CallAction.answer || action == CallAction.answerAudio || action == CallAction.answerVideo) {
+    // Notification automatically transitions to persistent connected state
+    CallNotificationPlugin.simulateCallConnected(
+      callerId: callerId,
+      callerName: callerName,
+      isVideoCall: action == CallAction.answerVideo,
+    );
+    // ✅ Notification remains visible with "Hang Up" button
+  }
+});
 ```
 
 ## Call Notification Types
